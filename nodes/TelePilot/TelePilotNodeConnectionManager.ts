@@ -1,19 +1,13 @@
 import 'reflect-metadata';
 import { Service } from 'typedi';
+import type { Client } from 'tdl';
 import {IDataObject} from "n8n-workflow";
-const { Client } = require('@telepilotco/tdl');
-const tdl = require('@telepilotco/tdl');
-// const childProcess = require('child_process');
+const tdl = require('tdl');
+const { getTdjson } = require('prebuilt-tdlib');
 
 const debug = require('debug')('telepilot-cm')
 
 const fs = require('fs/promises');
-
-var pjson = require('../../package.json');
-const nodeVersion = pjson.version;
-
-const binaryVersion = pjson.dependencies["@telepilotco/tdlib-binaries-prebuilt"].replace("^", "");
-const addonVersion = pjson.dependencies["@telepilotco/tdl"].replace("^", "");
 
 export enum TelepilotAuthState {
 	NO_CONNECTION = "NO_CONNECTION",
@@ -40,11 +34,11 @@ function getEnumFromString(enumObj: any, str: string): any {
 }
 
 class ClientSession {
-	client: typeof Client;
+	client: Client;
 	authState: TelepilotAuthState;
 	phoneNumber: string;
 
-	constructor(client: typeof Client, authState: TelepilotAuthState, phoneNumber: string) {
+	constructor(client: Client, authState: TelepilotAuthState, phoneNumber: string) {
 		this.client = client;
 		this.authState = authState;
 		this.phoneNumber = phoneNumber
@@ -79,7 +73,6 @@ export class TelePilotNodeConnectionManager {
 		// let result = await clientSession.client.invoke({
 		// 	_: 'close'
 		// })
-		clientSession.client.off
 		let result = clientSession.client.close();
 		delete this.clientSessions[apiId];
 		debug(Object.keys(this.clientSessions))
@@ -173,7 +166,7 @@ export class TelePilotNodeConnectionManager {
 	}
 
 	async createClientSetAuthHandlerForPhoneNumberLogin(apiId: number, apiHash: string, phoneNumber: string): Promise<ClientSession> {
-		let client: typeof Client;
+		let client: Client;
 		if (this.clientSessions[apiId] === undefined) {
 			client = this.initClient(apiId, apiHash);
 			let clientSession = new ClientSession(client, TelepilotAuthState.NO_CONNECTION, phoneNumber);
@@ -198,17 +191,10 @@ export class TelePilotNodeConnectionManager {
 	}
 
 	private initClient(apiId: number, apiHash: string) {
-		let clients_keys = Object.keys(this.clientSessions);
-		let {libFolder, libFile} = this.locateBinaryModules();
-		debug("nodeVersion:", nodeVersion);
-		debug("binaryVersion:", binaryVersion);
-		debug("addonVersion:", addonVersion);
+		const clients_keys = Object.keys(this.clientSessions);
 		if (!clients_keys.includes(apiId.toString()) || this.clientSessions[apiId] === undefined) {
 			if (!this.tdlConfigured) {
-				tdl.configure({
-					libdir: libFolder,
-					tdjson: libFile
-				});
+				tdl.configure({ tdjson: getTdjson() });
 				this.tdlConfigured = true;
 			}
 			return tdl.createClient({
@@ -216,56 +202,10 @@ export class TelePilotNodeConnectionManager {
 				apiHash,
 				databaseDirectory: this.getTdDatabasePathForClient(apiId),
 				filesDirectory: this.getTdFilesPathForClient(apiId),
-				nodeVersion,
-				binaryVersion,
-				addonVersion
-				// useTestDc: true
 			});
 		} else {
 			return this.clientSessions[apiId].client;
 		}
-	}
-
-// @ts-ignore
-	private locateBinaryModules() {
-		let _lib_prebuilt_package = "tdlib-binaries-prebuilt/prebuilds/";
-
-		let libFile = "";
-		const libFolder = __dirname + "/../../../../" + _lib_prebuilt_package;
-
-		if (process.arch === "x64") {
-			switch (process.platform) {
-				case "win32":
-					throw new Error("Your n8n installation is currently not supported, " +
-						"please refer to https://telepilot.co/nodes/telepilot/#win-x64")
-					break;
-				case 'darwin':
-					throw new Error("Your n8n installation is currently not supported, " +
-						"please refer to https://telepilot.co/nodes/telepilot/#macos-x64")
-					break;
-				case 'linux':
-						// libFile = libFolder + "libtdjson" + ".so"
-						libFile = "libtdjson" + ".so"
-					break;
-				default:
-					throw new Error("Not implemented for " + process.platform);
-			}
-		} else if (process.arch == "arm64") {
-			switch (process.platform) {
-				case "darwin":
-					// 	"please refer to https://telepilot.co/nodes/telepilot/#macos-arm64")
-					libFile = "libtdjson" + ".dylib"
-					break;
-				case "linux":
-					libFile = "libtdjson" + ".so"
-					break;
-				default:
-					throw new Error("Your n8n installation is currently not supported, " +
-						"please refer to https://telepilot.co/nodes/telepilot/#win-arm64")
-			}
-		}
-		// return {libFile, bridgeFile};
-		return {libFolder, libFile};
 	}
 
 	markClientAsClosed(apiId: number) {

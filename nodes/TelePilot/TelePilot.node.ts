@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 
+import type { Client } from 'tdl';
 import {
 	IExecuteFunctions,
 	INodeExecutionData,
@@ -153,8 +154,6 @@ export class TelePilot implements INodeType {
 
 			//Variables Group
 			variable_supergroup_id,
-			variable_audio_binary_property_name,
-			variable_send_as_voice
 		],
 	};
 	// The execute method will go here
@@ -172,7 +171,7 @@ export class TelePilot implements INodeType {
 		debug('Executing telePilot node, resource=' + resource + ', operation=' + operation);
 
 		let result;
-		let client;
+		let client!: Client;
 		if (resource === 'login') {
 			if (operation === 'login') {
 
@@ -349,11 +348,11 @@ export class TelePilot implements INodeType {
 					}});
 					return [this.helpers.returnJsonArray(returnData)];
 				} else {
-					throw new Error("Please login: https://telepilot.co/login-howto") as NodeOperationError
-				}
-			} else {
-				client = clientSession.client;
+				throw new NodeOperationError(this.getNode(), "Please login: https://telepilot.co/login-howto")
 			}
+		} else {
+			client = clientSession.client;
+		}
 		}
 
 		// For each item, make an API call to create a contact
@@ -990,22 +989,31 @@ export class TelePilot implements INodeType {
 					});
 					returnData.push(result);
 				}
-			} else if (resource === 'group') {
-				if (operation === 'getSupergroup') {
-					const supergroup_id = this.getNodeParameter('supergroup_id', 0);
-					result = await client.invoke({
-						_: 'getSupergroup',
-						supergroup_id,
-					});
-					returnData.push(result);
-				} else if (operation === 'getSupergroupFullInfo') {
-					const supergroup_id = this.getNodeParameter('supergroup_id', 0);
-					result = await client.invoke({
-						_: 'getSupergroupFullInfo',
-						supergroup_id,
-					});
-					returnData.push(result);
-				}
+		} else if (resource === 'group') {
+			if (operation === 'getSupergroup') {
+				const supergroup_id = this.getNodeParameter('supergroup_id', 0);
+				result = await client.invoke({
+					_: 'getSupergroup',
+					supergroup_id,
+				});
+				returnData.push(result);
+			} else if (operation === 'getSupergroupFullInfo') {
+				const supergroup_id = this.getNodeParameter('supergroup_id', 0);
+				result = await client.invoke({
+					_: 'getSupergroupFullInfo',
+					supergroup_id,
+				});
+				returnData.push(result);
+			} else if (operation === 'getSupergroupMembers') {
+				const supergroup_id = this.getNodeParameter('supergroup_id', 0);
+				result = await client.invoke({
+					_: 'getSupergroupMembers',
+					supergroup_id,
+					offset: 0,
+					limit: 200,
+				});
+				returnData.push(result);
+			}
 			} else if(resource === 'request') {
 				if (operation === 'customRequest') {
 					const jsonString = this.getNodeParameter('request_json', 0)  as string;
@@ -1022,7 +1030,7 @@ export class TelePilot implements INodeType {
 				{
 					returnData.push({ json: { message: e.message, error: e } });
 				} else {
-					throw new Error("Session was closed or terminated. Please login again: https://telepilot.co/login-howto") as NodeOperationError
+					throw new NodeOperationError(this.getNode(), "Session was closed or terminated. Please login again: https://telepilot.co/login-howto")
 				}
 			} else 	if (e.message === "Unauthorized") {
 				cM.markClientAsClosed(credentials?.apiId as number);
@@ -1030,14 +1038,14 @@ export class TelePilot implements INodeType {
 				{
 					returnData.push({ json: { message: e.message, error: e } });
 				} else {
-					throw new Error("Please login: https://telepilot.co/login-howto") as NodeOperationError
-				}
-			} else {
-				if (this.continueOnFail())
+				throw new NodeOperationError(this.getNode(), "Please login: https://telepilot.co/login-howto")
+			}
+		} else {
+			if (this.continueOnFail())
 				{
 					returnData.push({ json: { message: e.message, error: e } });
 				} else {
-					throw(e as NodeOperationError);
+					throw e;
 				}
 			}
 		}

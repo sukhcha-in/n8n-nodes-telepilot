@@ -32,10 +32,6 @@ export const optionResources: INodeProperties = {
 		value: 'login',
 	},
 	{
-		name: 'Media',
-		value: 'media',
-	},
-	{
 		name: 'Message',
 		value: 'message',
 	},
@@ -745,8 +741,8 @@ export const variable_message_thread_id: INodeProperties = {
 			resource: ['message'],
 		},
 	},
-	default: '',
-	placeholder: 'Text',
+	default: 0,
+	placeholder: '0',
 	description: 'If not 0, a message thread identifier in which the message will be sent',
 };
 
@@ -756,7 +752,7 @@ export const variable_supergroup_id: INodeProperties = {
 	type: 'string',
 	displayOptions: {
 		show: {
-			operation: ['getSupergroup', 'getSupergroupFullInfo'],
+			operation: ['getSupergroup', 'getSupergroupFullInfo', 'getSupergroupMembers'],
 			resource: ['group'],
 		},
 	},
@@ -1032,7 +1028,7 @@ export const variable_video_duration: INodeProperties = {
 			resource: ['message'],
 		},
 	},
-	default: '',
+	default: 0,
 	placeholder: '30'
 };
 
@@ -1046,7 +1042,7 @@ export const variable_video_width: INodeProperties = {
 			resource: ['message'],
 		},
 	},
-	default: '',
+	default: 0,
 	placeholder: '320'
 };
 
@@ -1060,7 +1056,7 @@ export const variable_video_height: INodeProperties = {
 			resource: ['message'],
 		},
 	},
-	default: '',
+	default: 0,
 	placeholder: '320'
 };
 
@@ -1074,7 +1070,7 @@ export const variable_video_supports_streaming: INodeProperties = {
 			resource: ['message'],
 		},
 	},
-	default: 'true'
+	default: true
 };
 
 export const variable_thumbnail_width: INodeProperties = {
@@ -1087,7 +1083,7 @@ export const variable_thumbnail_width: INodeProperties = {
 			resource: ['message'],
 		},
 	},
-	default: '',
+	default: 0,
 	placeholder: '320'
 };
 
@@ -1101,7 +1097,7 @@ export const variable_thumbnail_height: INodeProperties = {
 			resource: ['message'],
 		},
 	},
-	default: '',
+	default: 0,
 	placeholder: '320'
 };
 

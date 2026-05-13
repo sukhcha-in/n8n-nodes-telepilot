@@ -1,5 +1,4 @@
 import {
-	ICredentialTestRequest,
 	ICredentialType,
 	INodeProperties,
 } from 'n8n-workflow';
@@ -36,11 +35,4 @@ export class TelePilotApi implements ICredentialType {
 		},
 	];
 
-	test: ICredentialTestRequest = {
-		request: {
-			baseURL: 'http://ls.telepilot.co:4413',
-			url: '?key=empty',
-			method: 'POST',
-		},
-	};
 }

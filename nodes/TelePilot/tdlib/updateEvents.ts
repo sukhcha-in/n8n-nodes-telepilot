@@ -1,4 +1,4 @@
-import {INodePropertyOptions} from "n8n-workflow/dist/Interfaces";
+import type {INodePropertyOptions} from "n8n-workflow";
 
 export const TDLibUpdateEvents: INodePropertyOptions[] = [
 		// {
